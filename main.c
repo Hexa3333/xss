@@ -12,12 +12,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <time.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/XKBlib.h>
 #include <X11/keysym.h>
+
 #include <png.h>
 
 #define MOUSE_LEFT  1UL
@@ -25,7 +29,7 @@
 
 #define RECT_COLOR 0x00FF0000
 
-int ProcessXImageToPNG(XImage* img, const char* file_path);
+int ProcessXImageToPNG(XImage* img, const char* filePath);
 
 int main(void)
 {
@@ -119,7 +123,7 @@ int main(void)
 						     selectionWidth, selectionHeight,
 						     AllPlanes, XYPixmap);
 
-		ProcessXImageToPNG(subImg, "test.png");
+		ProcessXImageToPNG(subImg, "./");
 		XDestroyImage(subImg);
 		break;
 	    }
@@ -148,9 +152,19 @@ int main(void)
     return 0;
 }
 
-int ProcessXImageToPNG(XImage* img, const char* file_path)
+int ProcessXImageToPNG(XImage* img, const char* filePath)
 {
-    FILE *fp = fopen(file_path, "wb");
+    time_t timeNow = time(NULL);
+    char* timestr = ctime(&timeNow);
+
+    char fileName[128] = {0};
+    strcpy(fileName, filePath);
+    strcat(fileName, "/");
+    strcat(fileName, timestr);
+    strcat(fileName, ".png");
+
+
+    FILE *fp = fopen(fileName, "wb");
     if (!fp)
     {
 	perror("Image processing error!");
