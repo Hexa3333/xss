@@ -3,6 +3,7 @@
     License: MIT License
 
     TODO:
+     * Change cursor during capture
      * Saving images
      * Copy to clipboard ( save in tmp regardless )
      * Argument processing
@@ -28,11 +29,32 @@
 #define MOUSE_RIGHT 3UL
 
 #define RECT_COLOR 0x00FF0000
+bool flag_CopyToClipboard = false;
 
-int ProcessXImageToPNG(XImage* img, const char* filePath);
+int SaveXImageAsPNG(XImage* img, const char* filePath);
 
-int main(void)
+int main(int argc, char** argv)
 {
+    char c = 0;
+    while ((c = getopt(argc, argv, "cp:")) != -1)
+    {
+	switch (c)
+	{
+	case 'c':
+	{
+	    flag_CopyToClipboard = true;
+	    break;
+	}
+	case 'p':
+	{
+	    // Parse optarg TopLX,TopLY,width,height
+	    break;
+	}
+	case '?':
+	{ return -1; }
+	}
+    }
+
     Display* display = XOpenDisplay(NULL);
     if (!display)
     {
@@ -122,8 +144,7 @@ int main(void)
 		XImage* subImg = XGetImage(display, imgPixmap, selectionTopLX, selectionTopLY,
 						     selectionWidth, selectionHeight,
 						     AllPlanes, XYPixmap);
-
-		ProcessXImageToPNG(subImg, "./");
+		SaveXImageAsPNG(subImg, "./");
 		XDestroyImage(subImg);
 		break;
 	    }
@@ -152,7 +173,7 @@ int main(void)
     return 0;
 }
 
-int ProcessXImageToPNG(XImage* img, const char* filePath)
+int SaveXImageAsPNG(XImage* img, const char* filePath)
 {
     time_t timeNow = time(NULL);
     char* timestr = ctime(&timeNow);
