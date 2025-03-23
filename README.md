@@ -1,0 +1,3 @@
+# XSS
+XSS is an X11 screen shotting utility that captures a rectangular area and saves it as a png.
+More on this later...
