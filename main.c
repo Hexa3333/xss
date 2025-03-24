@@ -22,6 +22,7 @@
 #include <X11/Xutil.h>
 #include <X11/XKBlib.h>
 #include <X11/keysym.h>
+#include <X11/cursorfont.h>
 
 #include <png.h>
 
@@ -66,14 +67,16 @@ int main(int argc, char** argv)
     unsigned int scrHeight = DisplayHeight(display, 0);
     XImage* scrImg = XGetImage(display, DefaultRootWindow(display), 0, 0, scrWidth, scrHeight, AllPlanes, ZPixmap);
 
+    Cursor cursor = XCreateFontCursor(display, XC_diamond_cross);
     /* override redirection of the window */
     XSetWindowAttributes winAttr;
     winAttr.override_redirect = True;
+    winAttr.cursor = cursor;
     winAttr.event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyReleaseMask | VisibilityChangeMask;
     Window window = XCreateWindow(display, DefaultRootWindow(display), 
 	    0, 0, scrWidth, scrHeight, 0,
 	    CopyFromParent, InputOutput, CopyFromParent,
-	    CWOverrideRedirect | CWEventMask, &winAttr);
+	    CWOverrideRedirect | CWCursor | CWEventMask, &winAttr);
     XMapRaised(display, window);
 
     Pixmap imgPixmap = XCreatePixmap(display, window, scrWidth, scrHeight, 24);
@@ -85,6 +88,7 @@ int main(int argc, char** argv)
     XSetWindowBackgroundPixmap(display, window, imgPixmap);
 
     XClearWindow(display, window);
+
 
     bool selectionOn = false;
     bool leftSelection;
@@ -167,7 +171,7 @@ int main(int argc, char** argv)
     XFreeGC(display, gc);
     XFreePixmap(display, imgPixmap);
 
-
+    XFreeCursor(display, cursor);
     XDestroyWindow(display, window);
     XCloseDisplay(display);
     return 0;
