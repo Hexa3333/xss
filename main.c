@@ -2,9 +2,9 @@
     Author: Alp Yilmaz
     License: MIT License
 
+    Dependencies: xclip
+
     TODO:
-     * Change cursor during capture
-     * Saving images
      * Copy to clipboard ( save in tmp regardless )
      * Argument processing
 	* arg specified capture rect
@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include <time.h>
 
 #include <X11/Xlib.h>
@@ -30,6 +31,7 @@
 #define MOUSE_RIGHT 3UL
 
 #define RECT_COLOR 0x00FF0000
+
 bool flag_CopyToClipboard = false;
 
 int SaveXImageAsPNG(XImage* img, const char* filePath);
@@ -236,4 +238,26 @@ int SaveXImageAsPNG(XImage* img, const char* filePath)
     png_write_end(pngStructP, pngInfoP);
     png_destroy_write_struct(&pngStructP, &pngInfoP);
     fclose(fp);
+
+    
+    // Clipboard
+    int wstatus;
+    pid_t xclip_pid = fork();
+    if (xclip_pid == 0)
+    {
+	execlp("xclip", "xclip",
+		"-selection", "clipboard",
+		"-t", "image/png",
+		"-i", fileName, NULL);
+	perror("xclip");
+    }
+    else if (xclip_pid == -1)
+    {
+	perror("xclip");
+	return 0;
+    }
+    else
+    {
+	wait(&wstatus);
+    }
 }
