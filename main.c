@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -82,6 +83,15 @@ int main(int argc, char** argv)
 	    selectionTopLY = atoi(topLYBuf);
 	    selectionWidth = atoi(widthBuf);
 	    selectionHeight = atoi(heightBuf);
+
+	    assert("Top left X position is invalid" &&
+		    selectionTopLX > 0 && selectionTopLX < scrWidth);
+	    assert("Top left Y position is invalid" &&
+		    selectionTopLY > 0 && selectionTopLY < scrHeight);
+	    assert("Selection width is invalid" && 
+		    selectionWidth > 0 && selectionWidth + selectionTopLX < scrWidth);
+	    assert("Selection height is invalid" &&
+		    selectionHeight > 0 && selectionHeight + selectionTopLY < scrHeight);
 
 	    XImage* subImg = XGetImage(display, DefaultRootWindow(display),
 		    selectionTopLX, selectionTopLY,
