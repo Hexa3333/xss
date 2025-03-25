@@ -3,9 +3,6 @@
     License: MIT License
 
     Dependencies: xclip
-
-    TODO:
-	* Naming files
 */
 
 
@@ -34,7 +31,7 @@
 bool flag_CopyToClipboard = false;
 bool flag_CmdSpecifiedDimensions = false;
 bool flag_OutputSpecified = false;
-char* OutputFileName = NULL;
+char* OutputFilePath = NULL;
 
 int SaveXImageAsPNG(XImage* img, const char* filePath);
 
@@ -68,7 +65,7 @@ int main(int argc, char** argv)
 	case 'o':
 	{
 	    flag_OutputSpecified = true;
-	    OutputFileName = optarg;
+	    OutputFilePath = optarg;
 	    break;
 	}
 	case 'p':
@@ -100,19 +97,22 @@ int main(int argc, char** argv)
 	    assert("Selection height is invalid" &&
 		    selectionHeight > 0 && selectionHeight + selectionTopLY < scrHeight);
 
-	    XImage* subImg = XGetImage(display, DefaultRootWindow(display),
-		    selectionTopLX, selectionTopLY,
-		    selectionWidth, selectionHeight,
-		    AllPlanes, ZPixmap);
-	    SaveXImageAsPNG(subImg, "./");
-	    
-	    return 0;
+	    break;
 	}
 	case '?':
 	{ return -1; }
 	}
     }
 
+    if (flag_CmdSpecifiedDimensions)
+    {
+	    XImage* subImg = XGetImage(display, DefaultRootWindow(display),
+		    selectionTopLX, selectionTopLY,
+		    selectionWidth, selectionHeight,
+		    AllPlanes, ZPixmap);
+	    SaveXImageAsPNG(subImg, NULL);
+	    return 0;
+    }
 
     XImage* scrImg = XGetImage(display, DefaultRootWindow(display), 0, 0, scrWidth, scrHeight, AllPlanes, ZPixmap);
 
@@ -193,7 +193,7 @@ int main(int argc, char** argv)
 		XImage* subImg = XGetImage(display, imgPixmap, selectionTopLX, selectionTopLY,
 						     selectionWidth, selectionHeight,
 						     AllPlanes, XYPixmap);
-		SaveXImageAsPNG(subImg, "./");
+		SaveXImageAsPNG(subImg, NULL);
 		XDestroyImage(subImg);
 		break;
 	    }
@@ -224,6 +224,9 @@ int main(int argc, char** argv)
 
 int SaveXImageAsPNG(XImage* img, const char* filePath)
 {
+    if (!filePath)
+	filePath = OutputFilePath;
+
     time_t timeNow = time(NULL);
     char* timestr = ctime(&timeNow);
 
