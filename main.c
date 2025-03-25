@@ -5,8 +5,7 @@
     Dependencies: xclip
 
     TODO:
-     * Argument processing
-	* arg specified capture rect
+	* Naming files
 */
 
 
@@ -34,6 +33,8 @@
 
 bool flag_CopyToClipboard = false;
 bool flag_CmdSpecifiedDimensions = false;
+bool flag_OutputSpecified = false;
+char* OutputFileName = NULL;
 
 int SaveXImageAsPNG(XImage* img, const char* filePath);
 
@@ -55,13 +56,19 @@ int main(int argc, char** argv)
     unsigned int scrHeight = DisplayHeight(display, 0);
 
     char c = 0;
-    while ((c = getopt(argc, argv, "cp:")) != -1)
+    while ((c = getopt(argc, argv, "cp:o:")) != -1)
     {
 	switch (c)
 	{
 	case 'c':
 	{
 	    flag_CopyToClipboard = true;
+	    break;
+	}
+	case 'o':
+	{
+	    flag_OutputSpecified = true;
+	    OutputFileName = optarg;
 	    break;
 	}
 	case 'p':
@@ -223,7 +230,7 @@ int SaveXImageAsPNG(XImage* img, const char* filePath)
     char fileName[128] = {0};
     strcpy(fileName, filePath);
     strcat(fileName, "/");
-    strcat(fileName, timestr);
+    strncat(fileName, timestr);
     strcat(fileName, ".png");
 
 
@@ -277,23 +284,26 @@ int SaveXImageAsPNG(XImage* img, const char* filePath)
 
     
     // Clipboard
-    int wstatus;
-    pid_t xclip_pid = fork();
-    if (xclip_pid == 0)
+    if (flag_CopyToClipboard)
     {
-	execlp("xclip", "xclip",
-		"-selection", "clipboard",
-		"-t", "image/png",
-		"-i", fileName, NULL);
-	perror("xclip");
-    }
-    else if (xclip_pid == -1)
-    {
-	perror("xclip");
-	return 0;
-    }
-    else
-    {
-	wait(&wstatus);
+	int wstatus;
+	pid_t xclip_pid = fork();
+	if (xclip_pid == 0)
+	{
+	    execlp("xclip", "xclip",
+		    "-selection", "clipboard",
+		    "-t", "image/png",
+		    "-i", fileName, NULL);
+	    perror("xclip");
+	}
+	else if (xclip_pid == -1)
+	{
+	    perror("xclip");
+	    return 0;
+	}
+	else
+	{
+	    wait(&wstatus);
+	}
     }
 }
