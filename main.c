@@ -5,7 +5,6 @@
     Dependencies: xclip
 
     TODO:
-     * Copy to clipboard ( save in tmp regardless )
      * Argument processing
 	* arg specified capture rect
 */
@@ -33,11 +32,27 @@
 #define RECT_COLOR 0x00FF0000
 
 bool flag_CopyToClipboard = false;
+bool flag_CmdSpecifiedDimensions = false;
 
 int SaveXImageAsPNG(XImage* img, const char* filePath);
 
+int selectionTopLX = 0;
+int selectionTopLY = 0;
+int selectionWidth = 0;
+int selectionHeight = 0;
+
 int main(int argc, char** argv)
 {
+    Display* display = XOpenDisplay(NULL);
+    if (!display)
+    {
+	fprintf(stderr, "Could not open display");
+	return -1;
+    }
+
+    unsigned int scrWidth = DisplayWidth(display, 0);
+    unsigned int scrHeight = DisplayHeight(display, 0);
+
     char c = 0;
     while ((c = getopt(argc, argv, "cp:")) != -1)
     {
@@ -50,23 +65,38 @@ int main(int argc, char** argv)
 	}
 	case 'p':
 	{
-	    // Parse optarg TopLX,TopLY,width,height
-	    break;
+	    // Format: TopLX,TopLY,width,height
+	    flag_CmdSpecifiedDimensions = true;
+	    char topLXBuf[16];
+	    char topLYBuf[16];
+	    char widthBuf[16];
+	    char heightBuf[16];
+
+	    char* saveptr;
+	    sprintf(topLXBuf, "%s", strtok_r(optarg, ",", &saveptr));
+	    sprintf(topLYBuf, "%s", strtok_r(NULL, ",", &saveptr));
+	    sprintf(widthBuf, "%s", strtok_r(NULL, ",", &saveptr));
+	    sprintf(heightBuf, "%s", saveptr);
+
+	    selectionTopLX = atoi(topLXBuf);
+	    selectionTopLY = atoi(topLYBuf);
+	    selectionWidth = atoi(widthBuf);
+	    selectionHeight = atoi(heightBuf);
+
+	    XImage* subImg = XGetImage(display, DefaultRootWindow(display),
+		    selectionTopLX, selectionTopLY,
+		    selectionWidth, selectionHeight,
+		    AllPlanes, ZPixmap);
+	    SaveXImageAsPNG(subImg, "./");
+	    
+	    return 0;
 	}
 	case '?':
 	{ return -1; }
 	}
     }
 
-    Display* display = XOpenDisplay(NULL);
-    if (!display)
-    {
-	fprintf(stderr, "Could not open display");
-	return -1;
-    }
 
-    unsigned int scrWidth = DisplayWidth(display, 0);
-    unsigned int scrHeight = DisplayHeight(display, 0);
     XImage* scrImg = XGetImage(display, DefaultRootWindow(display), 0, 0, scrWidth, scrHeight, AllPlanes, ZPixmap);
 
     Cursor cursor = XCreateFontCursor(display, XC_diamond_cross);
@@ -96,10 +126,6 @@ int main(int argc, char** argv)
     bool leftSelection;
     int selectionOriginX = 0,
 	selectionOriginY = 0;
-    int selectionTopLX = 0,
-	selectionTopLY = 0;
-    unsigned int selectionWidth = 0,
-		 selectionHeight = 0;
     XSetInputFocus(display, window, RevertToParent, CurrentTime);
     XEvent event = {0};
     while (1)
