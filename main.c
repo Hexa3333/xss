@@ -230,7 +230,7 @@ int SaveXImageAsPNG(XImage* img, const char* filePath)
     char fileName[128] = {0};
     strcpy(fileName, filePath);
     strcat(fileName, "/");
-    strncat(fileName, timestr);
+    strncat(fileName, timestr, strlen(timestr)-1); // trim newline
     strcat(fileName, ".png");
 
 
