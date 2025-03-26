@@ -121,7 +121,7 @@ int main(int argc, char** argv)
     XSetWindowAttributes winAttr;
     winAttr.override_redirect = True;
     winAttr.cursor = cursor;
-    winAttr.event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyReleaseMask | FocusChangeMask | VisibilityChangeMask;
+    winAttr.event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyReleaseMask | VisibilityChangeMask;
     Window window = XCreateWindow(display, DefaultRootWindow(display), 
 	    0, 0, scrWidth, scrHeight, 0,
 	    CopyFromParent, InputOutput, CopyFromParent,
@@ -152,11 +152,6 @@ int main(int argc, char** argv)
 	    event.type == VisibilityFullyObscured)
 	{
 	    fprintf(stderr, "Visibility obscured - quitting...\n");
-	    break;
-	}
-	else if (event.type == FocusOut)
-	{
-	    fprintf(stderr, "Focus lost - quitting...\n");
 	    break;
 	}
 
