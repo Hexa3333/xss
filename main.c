@@ -2,6 +2,9 @@
     Author: Alp Yilmaz
     License: MIT License
 
+    TODO:
+    Async saving
+
     Dependencies: xclip
 */
 
@@ -110,7 +113,7 @@ int main(int argc, char** argv)
 		    selectionTopLX, selectionTopLY,
 		    selectionWidth, selectionHeight,
 		    AllPlanes, ZPixmap);
-	    SaveXImageAsPNG(subImg, NULL);
+	    SaveXImageAsPNG(subImg, "./");
 	    return 0;
     }
 
@@ -224,7 +227,7 @@ int main(int argc, char** argv)
 
 int SaveXImageAsPNG(XImage* img, const char* filePath)
 {
-    if (!filePath)
+    if (flag_OutputSpecified)
 	filePath = OutputFilePath;
 
     time_t timeNow = time(NULL);
