@@ -3,6 +3,7 @@
     License: MIT License
 
     TODO:
+    Fix unescapability on focus lost
     Async saving
 
     Dependencies: xclip
@@ -193,6 +194,11 @@ int main(int argc, char** argv)
 	    {
 		// Time to process
 		selectionOn = false;
+		if (selectionWidth <= 0 || selectionHeight <= 0)
+		{
+		    fprintf(stderr, "Selection lacking dimensions - quitting...");
+		    break;
+		}
 		XImage* subImg = XGetImage(display, imgPixmap, selectionTopLX, selectionTopLY,
 						     selectionWidth, selectionHeight,
 						     AllPlanes, XYPixmap);
