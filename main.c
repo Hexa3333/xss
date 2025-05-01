@@ -230,10 +230,11 @@ int main(int argc, char** argv)
     XDestroyWindow(display, window);
     XCloseDisplay(display);
 
-    pthread_join(imageprocThread, NULL);
+    void* saveReturn;
+    pthread_join(imageprocThread, &saveReturn);
     XDestroyImage(saveImage);
 
-    return 0;
+    return (int)saveReturn;
 }
 
 void* SaveXImageAsPNG(void*)
@@ -258,27 +259,27 @@ void* SaveXImageAsPNG(void*)
     if (!fp)
     {
 	perror("Image processing error!");
-	exit(2);
+	return (void*)2;
     }
 
     png_structp pngStructP = png_create_write_struct(PNG_LIBPNG_VER_STRING, (png_voidp)0, 0, 0);
     if (!pngStructP)
     {
-        fprintf("Png error - quitting...\n");
-	exit(2);
+        fprintf(stderr, "Png error - quitting...\n");
+	return (void*)2;
     }
 
     png_infop pngInfoP = png_create_info_struct(pngStructP);
     if (!pngInfoP)
     {
-        fprintf("Png error - quitting...\n");
-	exit(2);
+        fprintf(stderr, "Png error - quitting...\n");
+	return (void*)2;
     }
 
     if (setjmp(png_jmpbuf(pngStructP)))
     {
-        fprintf("Png error - quitting...\n");
-	exit(2);
+        fprintf(stderr, "Png error - quitting...\n");
+	return (void*)2;
     }
 
     png_init_io(pngStructP, fp);
@@ -322,7 +323,7 @@ void* SaveXImageAsPNG(void*)
 	else if (xclip_pid == -1)
 	{
 	    perror("xclip");
-	    exit(3);
+            return (void*)3;
 	}
 	else
 	{
