@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <pthread.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -37,7 +38,8 @@ bool flag_CmdSpecifiedDimensions = false;
 bool flag_OutputSpecified = false;
 char* OutputFilePath = NULL;
 
-int SaveXImageAsPNG(XImage* img, const char* filePath);
+XImage* saveImage = NULL;
+void* SaveXImageAsPNG(void*);
 
 int selectionTopLX = 0;
 int selectionTopLY = 0;
@@ -110,11 +112,11 @@ int main(int argc, char** argv)
 
     if (flag_CmdSpecifiedDimensions)
     {
-	    XImage* subImg = XGetImage(display, DefaultRootWindow(display),
+	    saveImage = XGetImage(display, DefaultRootWindow(display),
 		    selectionTopLX, selectionTopLY,
 		    selectionWidth, selectionHeight,
 		    AllPlanes, ZPixmap);
-	    SaveXImageAsPNG(subImg, "./");
+	    SaveXImageAsPNG(NULL);
 	    return 0;
     }
 
@@ -132,17 +134,18 @@ int main(int argc, char** argv)
 	    CWOverrideRedirect | CWCursor | CWEventMask, &winAttr);
     XMapRaised(display, window);
 
-    Pixmap imgPixmap = XCreatePixmap(display, window, scrWidth, scrHeight, 24);
+    Pixmap saveImagePixmap = XCreatePixmap(display, window, scrWidth, scrHeight, 24);
     XGCValues gcAttr;
     gcAttr.foreground = RECT_COLOR;
     GC gc = XCreateGC(display, window, GCForeground, &gcAttr);
 
-    XPutImage(display, imgPixmap, gc, scrImg, 0, 0, 0, 0, scrWidth, scrHeight);
-    XSetWindowBackgroundPixmap(display, window, imgPixmap);
+    XPutImage(display, saveImagePixmap, gc, scrImg, 0, 0, 0, 0, scrWidth, scrHeight);
+    XSetWindowBackgroundPixmap(display, window, saveImagePixmap);
 
     XClearWindow(display, window);
 
 
+    pthread_t imageprocThread;
     bool selectionOn = false;
     bool leftSelection;
     int selectionOriginX = 0,
@@ -199,11 +202,10 @@ int main(int argc, char** argv)
 		    fprintf(stderr, "Selection lacking dimensions - quitting...");
 		    break;
 		}
-		XImage* subImg = XGetImage(display, imgPixmap, selectionTopLX, selectionTopLY,
+		saveImage = XGetImage(display, saveImagePixmap, selectionTopLX, selectionTopLY,
 						     selectionWidth, selectionHeight,
 						     AllPlanes, XYPixmap);
-		SaveXImageAsPNG(subImg, "./");
-		XDestroyImage(subImg);
+                pthread_create(&imageprocThread, 0, SaveXImageAsPNG, 0);
 		break;
 	    }
 	}
@@ -220,21 +222,27 @@ int main(int argc, char** argv)
 	}
     }
 
-
     XDestroyImage(scrImg);
     XFreeGC(display, gc);
-    XFreePixmap(display, imgPixmap);
+    XFreePixmap(display, saveImagePixmap);
 
     XFreeCursor(display, cursor);
     XDestroyWindow(display, window);
     XCloseDisplay(display);
+
+    pthread_join(imageprocThread, NULL);
+    XDestroyImage(saveImage);
+
     return 0;
 }
 
-int SaveXImageAsPNG(XImage* img, const char* filePath)
+void* SaveXImageAsPNG(void*)
 {
+    char* filePath;
     if (flag_OutputSpecified)
 	filePath = OutputFilePath;
+    else
+        filePath = "./";
 
     time_t timeNow = time(NULL);
     char* timestr = ctime(&timeNow);
@@ -250,37 +258,40 @@ int SaveXImageAsPNG(XImage* img, const char* filePath)
     if (!fp)
     {
 	perror("Image processing error!");
-	return 0;
+	exit(2);
     }
 
     png_structp pngStructP = png_create_write_struct(PNG_LIBPNG_VER_STRING, (png_voidp)0, 0, 0);
     if (!pngStructP)
-	return -1;
+    {
+        fprintf("Png error - quitting...\n");
+	exit(2);
+    }
 
     png_infop pngInfoP = png_create_info_struct(pngStructP);
     if (!pngInfoP)
     {
-	png_destroy_write_struct(&pngStructP, (png_infopp)NULL);
-	return -1;
+        fprintf("Png error - quitting...\n");
+	exit(2);
     }
 
     if (setjmp(png_jmpbuf(pngStructP)))
     {
-	png_destroy_write_struct(&pngStructP, (png_infopp)NULL);
-	return -1;
+        fprintf("Png error - quitting...\n");
+	exit(2);
     }
 
     png_init_io(pngStructP, fp);
-    png_set_IHDR(pngStructP, pngInfoP, img->width, img->height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+    png_set_IHDR(pngStructP, pngInfoP, saveImage->width, saveImage->height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
 		 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
     png_write_info(pngStructP, pngInfoP);
 
-    png_bytep row = malloc(img->width * 3 * sizeof(png_byte));
-    for (int y = 0; y < img->height; ++y)
+    png_bytep row = malloc(saveImage->width * 3 * sizeof(png_byte));
+    for (int y = 0; y < saveImage->height; ++y)
     {
-	for (int x = 0; x < img->width; ++x)
+	for (int x = 0; x < saveImage->width; ++x)
 	{
-	    unsigned long pixel = XGetPixel(img, x, y);
+	    unsigned long pixel = XGetPixel(saveImage, x, y);
 	    /* Assuming the pixel is in 0xRRGGBB format */
 	    row[x*3 + 0] = (pixel >> 16) & 0xff;  /* Red */
 	    row[x*3 + 1] = (pixel >> 8)  & 0xff;  /* Green */
@@ -311,7 +322,7 @@ int SaveXImageAsPNG(XImage* img, const char* filePath)
 	else if (xclip_pid == -1)
 	{
 	    perror("xclip");
-	    return 0;
+	    exit(3);
 	}
 	else
 	{
