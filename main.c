@@ -4,7 +4,6 @@
 
     TODO:
     Fix unescapability on focus lost
-    Async saving
 
     Dependencies: xclip
 */
