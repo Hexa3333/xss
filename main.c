@@ -144,7 +144,7 @@ int main(int argc, char** argv)
     XClearWindow(display, window);
 
 
-    pthread_t imageprocThread;
+    pthread_t imageprocThread = 0;
     bool selectionOn = false;
     bool leftSelection;
     int selectionOriginX = 0,
@@ -229,11 +229,14 @@ int main(int argc, char** argv)
     XDestroyWindow(display, window);
     XCloseDisplay(display);
 
-    void* saveReturn;
-    pthread_join(imageprocThread, &saveReturn);
-    XDestroyImage(saveImage);
+    void* retval = 0;
+    if (imageprocThread)
+    {
+        pthread_join(imageprocThread, &retval);
+        XDestroyImage(saveImage);
+    }
 
-    return (int)saveReturn;
+    return (int)retval;
 }
 
 void* SaveXImageAsPNG(void*)
