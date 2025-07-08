@@ -230,10 +230,9 @@ int main(int argc, char** argv)
     XCloseDisplay(display);
 
     void* retval = 0;
-    if (imageprocThread)
+    if (saveImage)
     {
-        pthread_join(imageprocThread, &retval);
-        XDestroyImage(saveImage);
+        retval = SaveXImageAsPNG(NULL);
     }
 
     return (int)retval;
