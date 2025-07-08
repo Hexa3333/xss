@@ -38,7 +38,7 @@ bool flag_OutputSpecified = false;
 char* OutputFilePath = NULL;
 
 XImage* saveImage = NULL;
-void* SaveXImageAsPNG(void*);
+int SaveXImageAsPNG();
 
 int selectionTopLX = 0;
 int selectionTopLY = 0;
@@ -115,7 +115,7 @@ int main(int argc, char** argv)
 		    selectionTopLX, selectionTopLY,
 		    selectionWidth, selectionHeight,
 		    AllPlanes, ZPixmap);
-	    SaveXImageAsPNG(NULL);
+	    SaveXImageAsPNG();
 	    return 0;
     }
 
@@ -204,7 +204,6 @@ int main(int argc, char** argv)
 		saveImage = XGetImage(display, saveImagePixmap, selectionTopLX, selectionTopLY,
 						     selectionWidth, selectionHeight,
 						     AllPlanes, XYPixmap);
-                pthread_create(&imageprocThread, 0, SaveXImageAsPNG, 0);
 		break;
 	    }
 	}
@@ -229,16 +228,13 @@ int main(int argc, char** argv)
     XDestroyWindow(display, window);
     XCloseDisplay(display);
 
-    void* retval = 0;
     if (saveImage)
-    {
-        retval = SaveXImageAsPNG(NULL);
-    }
-
-    return (int)retval;
+        return SaveXImageAsPNG();
+    else
+        return 0;
 }
 
-void* SaveXImageAsPNG(void*)
+int SaveXImageAsPNG()
 {
     char* filePath;
     if (flag_OutputSpecified)
@@ -260,27 +256,27 @@ void* SaveXImageAsPNG(void*)
     if (!fp)
     {
 	perror("Image processing error!");
-	return (void*)2;
+	return 2;
     }
 
     png_structp pngStructP = png_create_write_struct(PNG_LIBPNG_VER_STRING, (png_voidp)0, 0, 0);
     if (!pngStructP)
     {
         fprintf(stderr, "Png error - quitting...\n");
-	return (void*)2;
+	return 2;
     }
 
     png_infop pngInfoP = png_create_info_struct(pngStructP);
     if (!pngInfoP)
     {
         fprintf(stderr, "Png error - quitting...\n");
-	return (void*)2;
+	return 2;
     }
 
     if (setjmp(png_jmpbuf(pngStructP)))
     {
         fprintf(stderr, "Png error - quitting...\n");
-	return (void*)2;
+	return 2;
     }
 
     png_init_io(pngStructP, fp);
@@ -324,7 +320,7 @@ void* SaveXImageAsPNG(void*)
 	else if (xclip_pid == -1)
 	{
 	    perror("xclip");
-            return (void*)3;
+            return 3;
 	}
 	else
 	{
