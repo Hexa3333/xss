@@ -31,6 +31,7 @@
 #define MOUSE_RIGHT 3UL
 
 #define RECT_COLOR 0x00FF0000
+#define FULLSCR_KEY XK_space
 
 bool flag_CopyToClipboard = false;
 bool flag_CmdSpecifiedDimensions = false;
@@ -162,6 +163,7 @@ int main(int argc, char** argv)
 	}
 
 	/* Release ESC to let go of selection or quit */
+        /* Or press Fullscreen key to capture all */
 	if (event.type == KeyRelease)
 	{
 	    KeySym keysym = XkbKeycodeToKeysym(display, event.xkey.keycode, 0, 0);
@@ -175,6 +177,11 @@ int main(int argc, char** argv)
 		else
 		    break;
 	    }
+            else if (keysym == FULLSCR_KEY)
+            {
+                saveImage = XGetImage(display, saveImagePixmap, 0, 0, scrWidth, scrHeight, AllPlanes, XYPixmap);
+                break;
+            }
 	}
 	else if (event.type == ButtonPress)
 	{
