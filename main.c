@@ -250,14 +250,16 @@ int SaveXImageAsPNG()
         filePath = "./";
 
     time_t timeNow = time(NULL);
-    char* timestr = ctime(&timeNow);
+    char timestr[64];
+    struct tm* tm_info = localtime(&timeNow);
+    strftime(timestr, sizeof(timestr), "%Y-%m-%d_%H-%M-%S", tm_info);
 
     char fileName[128] = {0};
     strcpy(fileName, filePath);
     strcat(fileName, "/");
     strncat(fileName, timestr, strlen(timestr)-1); // trim newline
     strcat(fileName, ".png");
-
+    printf("%s\n", fileName);
 
     FILE *fp = fopen(fileName, "wb");
     if (!fp)
